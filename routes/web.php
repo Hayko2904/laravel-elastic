@@ -16,6 +16,40 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     $client = \Elasticsearch\ClientBuilder::create()
         ->build();
-    \App\Models\Person::addAllToIndex();
+
+
+    $params = [
+        'index' => 'data',
+//        'type' => 'persons',
+        'body' => [
+            'query' => [
+                'match' => [
+                    'first_name' => 'Viva'
+                ]
+            ]
+        ]
+
+    ];
+
+
+    $response = $client->bulk([
+        'body' => [
+            'index' => [
+                '_index'    => 'data',
+                '_type'     => '_doc'
+            ],
+            [
+                'id'            => 1,
+//                'name'          => $movie->name,
+//                'year'          => $movie->year,
+//                'description'   => $movie->description,
+//                'rating'        => $movie->rating,
+//                'actors'        => implode(',', $movie->movie_actors->pluck('name')->toArray())
+            ]
+        ]
+    ]);
+    dd($response);
+
+
     return view('welcome');
 });
