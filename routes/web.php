@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
+    $client = \Elasticsearch\ClientBuilder::create()
+        ->build();
     \App\Models\Person::addAllToIndex();
     return view('welcome');
 });
