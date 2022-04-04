@@ -13,27 +13,49 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
+Route::get('/', function (\Illuminate\Http\Request $request) {
     $client = \Elasticsearch\ClientBuilder::create()
         ->setHosts(config('elasticquent.config.hosts'))
         ->build();
 
-//    \App\Models\Person::reindex();
+    $aa = new \App\Models\Person();
+    $aa->addAllToIndex();
+    $aa->reindex();
 
-    $params = [
-        "index" => "data",
-        "type" => "persons",
-        "body" => [
-            "query" => [
-                "query_string" => [
-                    "query" => "*il*"
-                ]
-            ]
-        ]
-    ];
+//    $aa->query()
+//        ->create([
+//            'first_name' => 'test',
+//            'last_name' => 'test',
+//            'phone' => 123,
+//            'address' => 'test'
+//        ]);
+//    $aa->whereLastName('test')->first()->delete();
+//    $aa->whereFirstName('test')->update([
+//        'first_name' => 'aaaa'
+//    ]);
 
-    $docs = $client->search($params);
-    dd($docs['hits']['hits']);
+    //dd($request->all());
+//    if ($request->input('search')) {
+//        $params = [
+//            "index" => "data",
+//            "type" => "persons",
+//            "body" => [
+//                "query" => [
+//                    "query_string" => [
+//                        "query" => "*". $request->input('search') ."*"
+//                    ]
+//                ]
+//            ]
+//        ];
+//
+//        $docs = $client->search($params);
+//
+//        return response()->json([
+//            'data' => $docs
+//        ]);
+//    }
+//    dd($docs['hits']['hits']);
+
 
     return view('welcome');
 });

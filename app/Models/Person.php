@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Observers\PersonObserver;
 use Elasticquent\ElasticquentTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -79,6 +80,9 @@ class Person extends Model
         'address' => [
             'type' => 'text',
             "analyzer" => "standard",
+        ],
+        'created_at' => [
+            "type" => "date",
         ],
     );
 }
