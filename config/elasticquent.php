@@ -28,5 +28,13 @@ return array(
     */
 
     'default_index' => 'data',
+    'default_type' => 'default_type',
+
+
+    /*
+     * data length size
+     */
+
+    'size' => 100
 
 );
