@@ -7,20 +7,47 @@ trait ElasticSearchTrait
     /**
      * @param string $condition
      * @param array $search
+     * @param string|null $conditionWhenExists
      * @return object
      */
-    protected function setParams(string $condition, array $search): object
+    private function setParams(string $condition, array $search, ?string $conditionWhenExists = null): object
     {
-        $this->params['body']["query"]["bool"][$condition][] = $search;
+        !is_null($conditionWhenExists)
+            ? (!is_null(array_key_first($this->setWhenExistsData($condition, $conditionWhenExists)))
+                ? $this->params['body']["query"]["bool"][$conditionWhenExists][array_key_first($this->setWhenExistsData($condition, $conditionWhenExists))]['bool'][$condition][] = $search
+                : $this->params['body']["query"]["bool"][$conditionWhenExists][]['bool'][$condition][] = $search)
+            : $this->params['body']["query"]["bool"][$condition][] = $search;
 
         return $this;
+    }
+
+    /**
+     * @param string $condition
+     * @param string $conditionWhenExists
+     * @return array
+     */
+    private function setWhenExistsData(string $condition, string $conditionWhenExists): array
+    {
+        $key = [];
+        if (!empty($this->params['body']["query"]["bool"][$conditionWhenExists])) {
+            $key = array_filter($this->params['body']["query"]["bool"][$conditionWhenExists], function ($val) use ($condition) {
+                if (!empty($val['bool'])) {
+
+                    return array_search($condition, array_keys($val['bool'])) !== false;
+                }
+
+                return false;
+            }, ARRAY_FILTER_USE_BOTH);
+        }
+
+        return $key;
     }
 
     /**
      * @param array $data
      * @return array|array[]
      */
-    public function setShouldData(array $data): array
+    private function setShouldData(array $data): array
     {
         $separators = [
             '=',
@@ -69,5 +96,51 @@ trait ElasticSearchTrait
             default:
                 return [];
         endswitch;
+    }
+
+    /**
+     * @param mixed $value
+     * @param string|null $condition
+     * @param string|null $format
+     * @return array
+     */
+    private function setWhereDate($value, ?string $condition = null, ?string $format = 'yyyy-MM-dd'): array
+    {
+        return !is_null($condition)
+            ? $condition === '>' ? [
+                'gte' => $value,
+                'format' => $format
+            ] : [
+                'lte' => $value,
+                'format' => $format
+            ]
+            : (is_array($value) ? [
+                'gte' => $value[0],
+                'lte' => $value[1],
+                'format' => $format
+            ] : [
+                'gte' => $value,
+                'lte' => $value,
+                'format' => $format
+            ]);
+    }
+
+    /**
+     * @param string $field
+     * @param mixed $value
+     * @return array|string[]
+     */
+    private function setWhere(string $field, $value): array
+    {
+        return is_string($value) && !ctype_digit($value)
+            ? (strtoupper($value) !== 'NULL'
+                ? [
+                    $field . '.keyword' => $value
+                ] : [
+                    $field => strtoupper($value)
+                ])
+            : [
+                $field => $value
+            ];
     }
 }

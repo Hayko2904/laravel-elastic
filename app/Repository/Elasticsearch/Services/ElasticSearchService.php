@@ -53,19 +53,18 @@ class ElasticSearchService
     }
 
     /**
-     * Should data v2
-     *
      * @param Closure $method
+     * @param bool $must
      * @return object
      */
-    public function shouldWhere(Closure $method): object
+    public function shouldWhere(Closure $method, ?bool $must = true): object
     {
         $data = $method($this->model::elastic());
 
         if (!empty($data->params['body'])) {
             $params['bool'] = $data->params['body']['query']['bool'];
 
-            $this->setParams('should', $params);
+            $this->setParams('should', $params, !$must ? 'must_not' : 'must');
         }
 
         return $this;
@@ -103,29 +102,11 @@ class ElasticSearchService
      */
     public function whereDate(string $field, $value, ?string $condition = null, ?string $format = 'yyyy-MM-dd'): object
     {
-       $data = !is_null($condition)
-            ? $condition === '>' ? [
-                'gte' => $value,
-                'format' => $format
-            ] : [
-                'lte' => $value,
-                'format' => $format
-            ]
-            : (is_array($value) ? [
-                'gte' => $value[0],
-                'lte' => $value[1],
-                'format' => $format
-            ] : [
-               'gte' => $value,
-               'lte' => $value,
-               'format' => $format
-           ]);
-
        $this->setParams(
            'must',
            [
                "range" => [
-                   $field => $data
+                   $field => $this->setWhereDate($value, $condition, $format)
                ]
            ]);
 
@@ -141,29 +122,11 @@ class ElasticSearchService
      */
     public function whereNotDate(string $field, $value, ?string $condition = null, ?string $format = 'yyyy-MM-dd'): object
     {
-        $data = !is_null($condition)
-            ? $condition === '>' ? [
-                'gte' => $value,
-                'format' => $format
-            ] : [
-                'lte' => $value,
-                'format' => $format
-            ]
-            : (is_array($value) ? [
-                'gte' => $value[0],
-                'lte' => $value[1],
-                'format' => $format
-            ] : [
-                'gte' => $value,
-                'lte' => $value,
-                'format' => $format
-            ]);
-
         $this->setParams(
             'must_not',
             [
                 "range" => [
-                    $field => $data
+                    $field => $this->setWhereDate($value, $condition, $format)
                 ]
             ]);
 
@@ -185,38 +148,53 @@ class ElasticSearchService
     }
 
     /**
-     * @param string $field
-     * @param mixed $value
-     * @return $this
+     * @param mixed $field
+     * @param string|null $value
+     * @return object
      */
-    public function where(string $field, $value): object
+    public function where($field, ?string $value = null): object
     {
-        $this->setParams(
-            'must',
-            [
-                "match" => [
-                    is_string($value) ? $field . '.keyword' : $field => $value
-                ]
-            ]);
+        if ($field instanceof Closure) {
+            $data = $field($this->model::elastic());
+
+            if (!empty($data->params['body'])) {
+                $params['bool'] = $data->params['body']['query']['bool'];
+
+                $this->setParams('must', $params);
+            }
+        } else {
+            $this->setParams(
+                'must',
+                [
+                    "match" => $this->setWhere($field, $value)
+                ]);
+        }
 
         return $this;
     }
 
     /**
-     * @param string $field
-     * @param mixed $value
-     * @return $this
+     * @param $field
+     * @param string|null $value
+     * @return object
      */
-    public function whereNot(string $field, $value): object
+    public function whereNot($field, ?string $value = null): object
     {
-        $this->setParams(
-            'must_not',
-            [
-                "match" => [
-                    is_string($value) ? $field . '.keyword' : $field => $value
-                ]
-            ]
-        );
+        if ($field instanceof Closure) {
+            $data = $field($this->model::elastic());
+
+            if (!empty($data->params['body'])) {
+                $params['bool'] = $data->params['body']['query']['bool'];
+
+                $this->setParams('must_not', $params);
+            }
+        } else {
+            $this->setParams(
+                'must_not',
+                [
+                    "match" => $this->setWhere($field, $value)
+                ]);
+        }
 
         return $this;
     }
